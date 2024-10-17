@@ -11,6 +11,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { toast } from "react-toastify";
 
 const tonConnect = new TonConnect({
   manifestUrl: "https://config.utxo.global/utxo-ton-wallet-manifest.json",
@@ -29,18 +30,18 @@ const customWallet: UIWallet = {
 };
 
 interface WalletContextType {
+  tonConnectUI: TonConnectUI | undefined;
   onConnect: () => Promise<void>;
   onDisconnect: () => Promise<void>;
-  tonConnectUI: TonConnectUI | undefined;
   wallet: Wallet | null;
   address: string;
   isConnected: boolean;
 }
 
 const WalletContext = createContext<WalletContextType>({
+  tonConnectUI: undefined,
   onConnect: async () => {},
   onDisconnect: async () => {},
-  tonConnectUI: undefined,
   wallet: null,
   address: "",
   isConnected: false,
@@ -85,7 +86,7 @@ export function WalletProvider({
   }, [wallet, address]);
 
   const onConnect = async () => {
-    await tonConnectUI?.openSingleWalletModal("utxowallet");
+    tonConnectUI?.openSingleWalletModal("utxowallet");
   };
 
   const onDisconnect = async () => {
@@ -94,7 +95,13 @@ export function WalletProvider({
 
   useEffect(() => {
     if (tonConnectUI) {
-      tonConnectUI.onStatusChange(setWallet, console.error);
+      tonConnectUI.connector.onStatusChange(
+        (wallet) => setWallet(wallet),
+        (error) => {
+          toast.error(error.message, { autoClose: 3000 });
+          tonConnectUI.closeSingleWalletModal();
+        }
+      );
       tonConnectUI.connectionRestored.then((restored) => {
         if (restored) {
           setWallet(tonConnectUI.wallet);

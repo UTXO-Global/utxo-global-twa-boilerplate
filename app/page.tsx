@@ -49,22 +49,12 @@ export default function Home() {
   const Connect = () => {
     return (
       <div className="flex flex-col gap-4 w-full">
-        <div className="text-2xl font-bold text-center mb-4">
-          Connect Wallet
-        </div>
         <button
-          className="bg-[#000000] text-[#FFF] text-xl py-3 px-5 rounded-lg flex justify-center items-center gap-2"
+          className="bg-[#000000] text-[#FFF] text-xl py-3 px-5 rounded-lg flex justify-center items-center gap-2 max-w-[500px]"
           onClick={onConnect}
         >
           <img className="h-8" src="utxo.png" />
-          <span>BTC</span>
-        </button>
-        <button
-          className="bg-[#000000] text-[#FFF] text-xl py-3 px-5 rounded-lg flex justify-center items-center gap-2"
-          onClick={onConnect}
-        >
-          <img className="h-8" src="utxo.png" />
-          <span>CKB</span>
+          <span>Connect Wallet</span>
         </button>
       </div>
     );
