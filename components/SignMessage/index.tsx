@@ -24,7 +24,7 @@ export default function SignMessage() {
         placeholder="Hello"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        className="border-b-[1px] outline-none"
+        className="border-b-[1px] outline-none text-base placeholder:text-gray-500"
       />
       <button
         className="bg-[#198754] text-[#FFF] py-3 px-5 rounded-lg text-xl disabled:grayscale"
@@ -32,6 +32,18 @@ export default function SignMessage() {
         onClick={() => {}}
       >
         Sign
+      </button>
+
+      <textarea
+        className="border resize-none w-full h-20 p-2 text-base mt-10"
+        placeholder="Input signature here ..."
+      ></textarea>
+      <button
+        className="bg-[#198754] text-[#FFF] py-3 px-5 rounded-lg text-xl disabled:grayscale"
+        disabled={true}
+        onClick={() => {}}
+      >
+        Verify signature
       </button>
     </div>
   );

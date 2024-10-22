@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ckb-ccc/lumos-patches": "^0.0.16-alpha.4",
+    "@ckb-lumos/lumos": "^0.23.0",
     "@tonconnect/sdk": "^3.0.5",
     "@tonconnect/ui": "^2.0.9",
     "@twa-dev/sdk": "^7.10.1",

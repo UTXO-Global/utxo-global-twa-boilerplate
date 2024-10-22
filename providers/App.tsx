@@ -1,16 +1,9 @@
 "use client";
 
-import {
-  PropsWithChildren,
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-} from "react";
+import { PropsWithChildren, createContext, useContext, useMemo } from "react";
 import { WalletProvider } from "./Wallet";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import WebApp from "@twa-dev/sdk";
 
 interface AppContextType {}
 
@@ -22,11 +15,6 @@ export function AppProvider({
   children,
 }: PropsWithChildren<AppContextProviderProps>) {
   const context: AppContextType = useMemo(() => ({}), []);
-
-  useEffect(() => {
-    WebApp.ready();
-    WebApp.expand();
-  }, [WebApp]);
 
   return (
     <WalletProvider>

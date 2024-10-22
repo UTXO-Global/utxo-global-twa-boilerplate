@@ -3,23 +3,21 @@
 import React from "react";
 import { useEffect, useState } from "react";
 import { truncateAddress } from "../../utils";
+import { useWalletContext } from "@/providers/Wallet";
 
-export default function SendNativeCoin() {
-  const [senderAddress, setSenderAddress] = useState("");
+export default function TransferToken() {
+  const { isConnected, wallet, address } = useWalletContext();
   const [addressTo, setAddressTo] = useState("");
+  const [args, setArgs] = useState("");
   const [amountInput, setAmountInput] = useState("0");
   const [satAmount, setSatAmount] = useState(0);
 
   return (
     <div className="flex flex-col gap-10">
-      <label className="text-2xl font-bold">Send ???</label>
+      <label className="text-2xl font-bold">Transfer xUDT</label>
       <div className="flex gap-10 items-center w-full justify-between">
         <label>Sender</label>
-        <select
-          className="py-3 px-5 cursor-pointer"
-          value={senderAddress}
-          onChange={(e) => setSenderAddress(e.target.value)}
-        ></select>
+        <span>{truncateAddress(address, 10)}</span>
       </div>
       <input
         type="text"
@@ -27,6 +25,13 @@ export default function SendNativeCoin() {
         className="border-b-[1px] outline-none"
         value={addressTo}
         onChange={(e) => setAddressTo(e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="Args"
+        className="border-b-[1px] outline-none"
+        value={addressTo}
+        onChange={(e) => setArgs(e.target.value)}
       />
       <div className="flex gap-5 justify-between border-b-[1px]">
         <input
@@ -39,7 +44,6 @@ export default function SendNativeCoin() {
             setAmountInput(e.target.value);
           }}
         />
-        <span>???</span>
       </div>
 
       <button
@@ -47,7 +51,7 @@ export default function SendNativeCoin() {
         disabled={true}
         onClick={() => {}}
       >
-        Send
+        Transfer
       </button>
     </div>
   );

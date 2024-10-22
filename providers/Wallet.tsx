@@ -89,6 +89,8 @@ export function WalletProvider({
     tonConnectUI?.openSingleWalletModal("utxowallet");
   };
 
+  const onSignMessage = async () => {};
+
   const onDisconnect = async () => {
     await tonConnectUI?.disconnect();
   };
