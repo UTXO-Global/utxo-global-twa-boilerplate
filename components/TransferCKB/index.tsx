@@ -243,6 +243,8 @@ export default function TransferCKB() {
           >
             {txHash}
           </a>
+          <br />
+          Status: {txStatus}
         </div>
       )}
 
