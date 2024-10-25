@@ -12,7 +12,7 @@
   resolved "https://registry.npmjs.org/@alloc/quick-lru/-/quick-lru-5.2.0.tgz"
   integrity sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==
 
-"@ckb-ccc/core@0.1.0-alpha.4":
+"@ckb-ccc/core@0.1.0-alpha.4", "@ckb-ccc/core@^0.1.0-alpha.4":
   version "0.1.0-alpha.4"
   resolved "https://registry.yarnpkg.com/@ckb-ccc/core/-/core-0.1.0-alpha.4.tgz#511eb8cfda405cbd6b3f70ec801f0af6d336f28f"
   integrity sha512-+h1IfVFJVkIAQHLBPRo49AKxbXTynJoiMDx8J5ayaPP7o7zKPRknw7WTuxpum4s8oxxqChi2zwO6e72QGeg7Wg==

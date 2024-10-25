@@ -6,11 +6,11 @@ import { truncateAddress } from "../../utils";
 import { useWalletContext } from "@/providers/Wallet";
 import Link from "next/link";
 import { BI, Cell, Indexer, WitnessArgs, helpers } from "@ckb-lumos/lumos";
-import { predefined } from "@ckb-lumos/config-manager";
 import { blockchain } from "@ckb-lumos/base";
 import { bytes } from "@ckb-lumos/codec";
 import { createTransactionFromSkeleton } from "@ckb-lumos/lumos/helpers";
 import { UserRejectsError } from "@tonconnect/sdk";
+import { AGGRON4, LINA } from "@/configs";
 
 export default function TransferCKB() {
   const { isConnected, wallet, address, tonConnectUI } = useWalletContext();
@@ -18,13 +18,14 @@ export default function TransferCKB() {
   const [error, setError] = useState<any | undefined>(undefined);
   const [addressTo, setAddressTo] = useState("");
   const [amount, setAmount] = useState("");
+  const [txStatus, setTxStatus] = useState("");
   const isTestnet = useMemo(() => {
     return wallet?.account.chain.toString() === "nervos_testnet";
   }, [wallet]);
 
   const buildTransferTx = async (transferAmount: BI) => {
     const neededCapacity = transferAmount.add(100000);
-    const lumosConfig = isTestnet ? predefined.AGGRON4 : predefined.LINA;
+    const lumosConfig = isTestnet ? AGGRON4 : LINA;
     const rpc = isTestnet
       ? "https://testnet.ckb.dev/rpc"
       : "https://mainnet.ckb.dev/rpc";
@@ -90,10 +91,10 @@ export default function TransferCKB() {
     txSkeleton = txSkeleton.update("cellDeps", (cellDeps) =>
       cellDeps.push({
         outPoint: {
-          txHash: lumosConfig.SCRIPTS.SECP256K1_BLAKE160.TX_HASH,
-          index: lumosConfig.SCRIPTS.SECP256K1_BLAKE160.INDEX,
+          txHash: lumosConfig.SCRIPTS.SECP256K1_BLAKE160?.TX_HASH!,
+          index: lumosConfig.SCRIPTS.SECP256K1_BLAKE160?.INDEX!,
         },
-        depType: lumosConfig.SCRIPTS.SECP256K1_BLAKE160.DEP_TYPE,
+        depType: lumosConfig.SCRIPTS.SECP256K1_BLAKE160?.DEP_TYPE!,
       })
     );
 
@@ -167,6 +168,7 @@ export default function TransferCKB() {
       if (result?.boc) {
         setAmount("");
         setAddressTo("");
+        setTxStatus("Pending");
         setTxHash(result.boc);
       }
     } catch (e) {
@@ -180,7 +182,29 @@ export default function TransferCKB() {
     }
   };
 
-  useEffect(() => {}, [tonConnectUI]);
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    try {
+      if (!!txHash && txStatus === "pending") {
+        interval = setInterval(async () => {
+          const res = await fetch(
+            `https://staging-api-720a.utxo.global/ckb/${
+              isTestnet ? "testnet" : "mainnet"
+            }/v1/transactions/${txHash}`
+          );
+
+          const { data } = await res.json();
+          if (data.attributes?.tx_status !== "pending") {
+            setTxStatus(data.attributes?.tx_status);
+          }
+        }, 1500); //1.5s
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    return () => clearInterval(interval);
+  }, [txHash, txStatus]);
 
   return (
     <div className="flex flex-col gap-10">
