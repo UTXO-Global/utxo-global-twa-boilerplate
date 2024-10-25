@@ -11,7 +11,7 @@ export const LayoutContent = ({
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
-  const { onDisconnect, onConnect, isConnected, wallet, address } =
+  const { onDisconnect, onConnect, isConnected, wallet, address, balance } =
     useWalletContext();
 
   const Account = () => {
@@ -67,6 +67,9 @@ export const LayoutContent = ({
       {isConnected && wallet ? (
         <div className="flex flex-col h-dvh">
           <Account />
+          <div className="text-center py-4">
+            Balance: {balance.toNumber() / 10 ** 8}
+          </div>
           {children}
         </div>
       ) : (

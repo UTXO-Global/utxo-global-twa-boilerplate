@@ -10,18 +10,20 @@ import { predefined } from "@ckb-lumos/config-manager";
 import { blockchain } from "@ckb-lumos/base";
 import { bytes } from "@ckb-lumos/codec";
 import { createTransactionFromSkeleton } from "@ckb-lumos/lumos/helpers";
+import { UserRejectsError } from "@tonconnect/sdk";
 
 export default function TransferCKB() {
   const { isConnected, wallet, address, tonConnectUI } = useWalletContext();
+  const [txHash, setTxHash] = useState("");
+  const [error, setError] = useState<any | undefined>(undefined);
   const [addressTo, setAddressTo] = useState("");
-  const [amountInput, setAmountInput] = useState("0");
-  const [satAmount, setSatAmount] = useState(0);
+  const [amount, setAmount] = useState("");
   const isTestnet = useMemo(() => {
     return wallet?.account.chain.toString() === "nervos_testnet";
   }, [wallet]);
 
-  const onTransfer = async () => {
-    const neededCapacity = BI.from(satAmount).add(100000);
+  const buildTransferTx = async (transferAmount: BI) => {
+    const neededCapacity = transferAmount.add(100000);
     const lumosConfig = isTestnet ? predefined.AGGRON4 : predefined.LINA;
     const rpc = isTestnet
       ? "https://testnet.ckb.dev/rpc"
@@ -66,7 +68,7 @@ export default function TransferCKB() {
 
     const transferOutput: Cell = {
       cellOutput: {
-        capacity: BI.from(satAmount).toHexString(),
+        capacity: BI.from(transferAmount).toHexString(),
         lock: toScript,
       },
       data: "0x",
@@ -143,21 +145,42 @@ export default function TransferCKB() {
       );
     }
 
-    const tx = createTransactionFromSkeleton(txSkeleton);
-
-    console.log(tx);
-
-    await tonConnectUI?.sendTransaction({
-      validUntil: 0,
-      messages: [
-        {
-          address: addressTo,
-          amount: satAmount.toString(),
-          payload: JSON.stringify(tx),
-        },
-      ],
-    });
+    return createTransactionFromSkeleton(txSkeleton);
   };
+  const onTransfer = async () => {
+    try {
+      setTxHash("");
+      setError(undefined);
+      const transferAmount = BI.from(Number(amount)).mul(10 ** 8);
+      const tx = await buildTransferTx(transferAmount);
+      const result = await tonConnectUI?.sendTransaction({
+        validUntil: Math.floor(Date.now() / 1000) + 60,
+        messages: [
+          {
+            address: addressTo,
+            amount: transferAmount.toString(),
+            payload: btoa(JSON.stringify(tx)),
+          },
+        ],
+      });
+
+      if (result?.boc) {
+        setAmount("");
+        setAddressTo("");
+        setTxHash(result.boc);
+      }
+    } catch (e) {
+      if (e instanceof UserRejectsError) {
+        setError(
+          "You rejected the transaction. Please confirm it to send to the blockchain"
+        );
+      } else {
+        setError((e as any).message);
+      }
+    }
+  };
+
+  useEffect(() => {}, [tonConnectUI]);
 
   return (
     <div className="flex flex-col gap-10">
@@ -178,14 +201,28 @@ export default function TransferCKB() {
           type="text"
           placeholder="0"
           className="w-full outline-none"
-          value={amountInput}
+          value={amount}
           onChange={(e) => {
-            setSatAmount(Number(e.target.value));
-            setAmountInput(e.target.value);
+            setAmount(e.target.value);
           }}
         />
         <span>CKB</span>
       </div>
+
+      {!!txHash && (
+        <div>
+          Tx:{" "}
+          <a
+            href={`https://${
+              isTestnet ? "testnet." : ""
+            }explorer.nervos.org/en/transaction/${txHash}`}
+          >
+            {txHash}
+          </a>
+        </div>
+      )}
+
+      {!!error && <div>{error}</div>}
 
       <div className="flex justify-between gap-2">
         <Link
@@ -196,7 +233,7 @@ export default function TransferCKB() {
         </Link>
         <button
           className="bg-[#198754] text-[#FFF] py-3 px-5 rounded-lg text-xl disabled:grayscale w-1/2"
-          disabled={!addressTo || !address || satAmount <= 0}
+          disabled={!addressTo || !address || Number(amount) < 63}
           onClick={onTransfer}
         >
           Transfer

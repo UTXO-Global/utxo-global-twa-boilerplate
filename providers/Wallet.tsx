@@ -1,6 +1,8 @@
 "use client";
 
 import { LocalStorage } from "@/utils/storage";
+import { predefined } from "@ckb-lumos/config-manager";
+import { BI, Indexer, helpers } from "@ckb-lumos/lumos";
 import TonConnect, { Wallet } from "@tonconnect/sdk";
 import { THEME, TonConnectUI, UIWallet } from "@tonconnect/ui";
 import {
@@ -36,6 +38,7 @@ interface WalletContextType {
   wallet: Wallet | null;
   address: string;
   isConnected: boolean;
+  balance: BI;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -45,6 +48,7 @@ const WalletContext = createContext<WalletContextType>({
   wallet: null,
   address: "",
   isConnected: false,
+  balance: BI.from(0),
 });
 
 export type AppContextProviderProps = {};
@@ -76,10 +80,38 @@ export function WalletProvider({
     tonConnectUI?.wallet || null
   );
 
+  const [balance, setBalance] = useState(BI.from(0));
+
+  const isTestnet = useMemo(() => {
+    return wallet?.account.chain.toString() === "nervos_testnet";
+  }, [wallet]);
+
   const address = useMemo(() => {
     if (wallet) return wallet.account.address;
     return "";
   }, [wallet]);
+
+  const fetchBalance = async () => {
+    setBalance(BI.from(0));
+    if (!!address) {
+      const lumosConfig = isTestnet ? predefined.AGGRON4 : predefined.LINA;
+      const rpc = isTestnet
+        ? "https://testnet.ckb.dev/rpc"
+        : "https://mainnet.ckb.dev/rpc";
+
+      const indexer = new Indexer(rpc);
+      const addressScript = helpers.parseAddress(address, {
+        config: lumosConfig,
+      });
+      const collector = indexer.collector({ lock: addressScript });
+      let balance: BI = BI.from(0);
+      for await (const cell of collector.collect()) {
+        balance = balance.add(cell.cellOutput.capacity);
+      }
+
+      setBalance(balance);
+    }
+  };
 
   const isConnected = useMemo(() => {
     return !!wallet && !!wallet.account?.address;
@@ -88,8 +120,6 @@ export function WalletProvider({
   const onConnect = async () => {
     tonConnectUI?.openSingleWalletModal("utxowallet");
   };
-
-  const onSignMessage = async () => {};
 
   const onDisconnect = async () => {
     await tonConnectUI?.disconnect();
@@ -115,6 +145,10 @@ export function WalletProvider({
     }
   }, [tonConnectUI]);
 
+  useEffect(() => {
+    fetchBalance();
+  }, [address, wallet]);
+
   const context: WalletContextType = useMemo(
     () => ({
       tonConnectUI,
@@ -123,8 +157,17 @@ export function WalletProvider({
       wallet,
       address,
       isConnected,
+      balance,
     }),
-    [tonConnectUI, onConnect, onDisconnect, wallet, address, isConnected]
+    [
+      tonConnectUI,
+      balance,
+      onConnect,
+      onDisconnect,
+      wallet,
+      address,
+      isConnected,
+    ]
   );
   return (
     <WalletContext.Provider value={context}>{children}</WalletContext.Provider>
