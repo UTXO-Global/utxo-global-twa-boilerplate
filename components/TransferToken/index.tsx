@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { truncateAddress } from "../../utils";
 import { useWalletContext } from "@/providers/Wallet";
 import { UserRejectsError } from "@tonconnect/sdk";
+import Link from "next/link";
 
 export default function TransferToken() {
   const { balance, wallet, address, tonConnectUI } = useWalletContext();
@@ -22,7 +23,6 @@ export default function TransferToken() {
     try {
       setTxHash("");
       setError(undefined);
-      const transferAmount = BigInt(amount) * BigInt(10 ** 8);
       const payload = {
         args,
       };
@@ -31,7 +31,7 @@ export default function TransferToken() {
         messages: [
           {
             address: addressTo,
-            amount: transferAmount.toString(),
+            amount: amount,
             payload: btoa(JSON.stringify(payload)),
           },
         ],
@@ -117,14 +117,39 @@ export default function TransferToken() {
           }}
         />
       </div>
+      {!!txHash && (
+        <div>
+          Tx:{" "}
+          <a
+            href={`https://${
+              isTestnet ? "testnet." : ""
+            }explorer.nervos.org/en/transaction/${txHash}`}
+            target="_blank"
+          >
+            {truncateAddress(txHash, 10)}
+          </a>
+          <br />
+          Status: {txStatus}
+        </div>
+      )}
 
-      <button
-        className="bg-[#198754] text-[#FFF] py-3 px-5 rounded-lg text-xl disabled:grayscale"
-        disabled={true}
-        onClick={onTransfer}
-      >
-        Transfer
-      </button>
+      {!!error && <div>{error}</div>}
+
+      <div className="flex justify-between gap-2">
+        <Link
+          className="py-3 px-5 rounded-lg text-xl border border-gray-400 w-1/2 text-center"
+          href="/"
+        >
+          Back
+        </Link>
+        <button
+          className="bg-[#198754] text-[#FFF] py-3 px-5 rounded-lg text-xl disabled:grayscale w-1/2"
+          disabled={!addressTo || !address || Number(amount) < 63}
+          onClick={onTransfer}
+        >
+          Transfer
+        </button>
+      </div>
     </div>
   );
 }
