@@ -4,165 +4,79 @@ import React, { useMemo } from "react";
 import { useEffect, useState } from "react";
 import { truncateAddress } from "../../utils";
 import { useWalletContext } from "@/providers/Wallet";
-import { predefined } from "@ckb-lumos/config-manager";
-import {
-  BI,
-  Cell,
-  Indexer,
-  Script,
-  WitnessArgs,
-  helpers,
-} from "@ckb-lumos/lumos";
-import { blockchain } from "@ckb-lumos/base";
-import { bytes } from "@ckb-lumos/codec";
-import { createTransactionFromSkeleton } from "@ckb-lumos/lumos/helpers";
-import { AGGRON4, LINA } from "@/configs";
+import { UserRejectsError } from "@tonconnect/sdk";
 
 export default function TransferToken() {
-  const { isConnected, wallet, address } = useWalletContext();
+  const { balance, wallet, address, tonConnectUI } = useWalletContext();
+  const [txHash, setTxHash] = useState("");
+  const [error, setError] = useState<any | undefined>(undefined);
   const [addressTo, setAddressTo] = useState("");
-  const [args, setArgs] = useState("");
   const [amount, setAmount] = useState("");
+  const [args, setArgs] = useState("");
+  const [txStatus, setTxStatus] = useState("");
   const isTestnet = useMemo(() => {
     return wallet?.account.chain.toString() === "nervos_testnet";
   }, [wallet]);
 
-  const buildTransferTx = async (transferAmount: BI) => {
-    const neededCapacity = transferAmount.add(100000);
-    const lumosConfig = isTestnet ? AGGRON4 : LINA;
-    const rpc = isTestnet
-      ? "https://testnet.ckb.dev/rpc"
-      : "https://mainnet.ckb.dev/rpc";
-
-    const indexer = new Indexer(rpc);
-    let txSkeleton = helpers.TransactionSkeleton({
-      cellProvider: indexer,
-    });
-
-    const fromScript = helpers.parseAddress(address, {
-      config: lumosConfig,
-    });
-    const toScript = helpers.parseAddress(addressTo, {
-      config: lumosConfig,
-    });
-
-    const xUdtType = {
-      codeHash: lumosConfig.SCRIPTS.XUDT?.CODE_HASH,
-      hashType: lumosConfig.SCRIPTS.XUDT?.HASH_TYPE,
-      args: args,
-    } as Script;
-
-    const xudtCollector = indexer.collector({
-      type: xUdtType,
-      lock: fromScript,
-    });
-
-    const cells = indexer.collector({
-      lock: fromScript,
-      data: "0x",
-      type: "empty",
-    });
-
-    // TODO: add smart selector
-    const collected: Cell[] = [];
-    let collectedSum = BI.from(0);
-    for await (const cell of cells.collect()) {
-      if (!cell.cellOutput.type) {
-        collectedSum = collectedSum.add(cell.cellOutput.capacity);
-        collected.push(cell);
-      }
-      if (collectedSum.gte(neededCapacity)) break;
-    }
-
-    const changeOutput: Cell = {
-      cellOutput: {
-        capacity: collectedSum.sub(neededCapacity).toHexString(),
-        lock: fromScript,
-      },
-      data: "0x",
-    };
-
-    const transferOutput: Cell = {
-      cellOutput: {
-        capacity: BI.from(transferAmount).toHexString(),
-        lock: toScript,
-      },
-      data: "0x",
-    };
-
-    txSkeleton = txSkeleton.update("inputs", (inputs) =>
-      inputs.push(...collected)
-    );
-    if (collectedSum.sub(neededCapacity).eq(BI.from(0))) {
-      txSkeleton = txSkeleton.update("outputs", (outputs) =>
-        outputs.push(transferOutput)
-      );
-    } else {
-      txSkeleton = txSkeleton.update("outputs", (outputs) =>
-        outputs.push(transferOutput, changeOutput)
-      );
-    }
-
-    txSkeleton = txSkeleton.update("cellDeps", (cellDeps) =>
-      cellDeps.push({
-        outPoint: {
-          txHash: lumosConfig.SCRIPTS.SECP256K1_BLAKE160?.TX_HASH!,
-          index: lumosConfig.SCRIPTS.SECP256K1_BLAKE160?.INDEX!,
-        },
-        depType: lumosConfig.SCRIPTS.SECP256K1_BLAKE160?.DEP_TYPE!,
-      })
-    );
-
-    const firstIndex = txSkeleton
-      .get("inputs")
-      .findIndex(
-        (input) =>
-          input.cellOutput.lock.codeHash === fromScript.codeHash &&
-          input.cellOutput.lock.hashType === fromScript.hashType &&
-          input.cellOutput.lock.args === fromScript.args
-      );
-    if (firstIndex !== -1) {
-      while (firstIndex >= txSkeleton.get("witnesses").size) {
-        txSkeleton = txSkeleton.update("witnesses", (witnesses) =>
-          witnesses.push("0x")
-        );
-      }
-      let witness: string = txSkeleton.get("witnesses").get(firstIndex)!;
-      const newWitnessArgs: WitnessArgs = {
-        /* 65-byte zeros in hex */
-        lock: "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+  const onTransfer = async () => {
+    try {
+      setTxHash("");
+      setError(undefined);
+      const transferAmount = BigInt(amount) * BigInt(10 ** 8);
+      const payload = {
+        args,
       };
-      if (witness !== "0x") {
-        const witnessArgs = blockchain.WitnessArgs.unpack(
-          bytes.bytify(witness)
-        );
-        const lock = witnessArgs.lock;
-        if (
-          !!lock &&
-          !!newWitnessArgs.lock &&
-          !bytes.equal(lock, newWitnessArgs.lock)
-        ) {
-          throw new Error(
-            "Lock field in first witness is set aside for signature!"
-          );
-        }
-        const inputType = witnessArgs.inputType;
-        if (inputType) {
-          newWitnessArgs.inputType = inputType;
-        }
-        const outputType = witnessArgs.outputType;
-        if (outputType) {
-          newWitnessArgs.outputType = outputType;
-        }
+      const result = await tonConnectUI?.sendTransaction({
+        validUntil: Math.floor(Date.now() / 1000) + 60,
+        messages: [
+          {
+            address: addressTo,
+            amount: transferAmount.toString(),
+            payload: btoa(JSON.stringify(payload)),
+          },
+        ],
+      });
+
+      if (result?.boc) {
+        setAmount("");
+        setAddressTo("");
+        setTxStatus("Pending");
+        setTxHash(result.boc);
       }
-      witness = bytes.hexify(blockchain.WitnessArgs.pack(newWitnessArgs));
-      txSkeleton = txSkeleton.update("witnesses", (witnesses) =>
-        witnesses.set(firstIndex, witness)
-      );
+    } catch (e) {
+      if (e instanceof UserRejectsError) {
+        setError(
+          "You rejected the transaction. Please confirm it to send to the blockchain"
+        );
+      } else {
+        setError((e as any).message);
+      }
+    }
+  };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    try {
+      if (!!txHash && txStatus === "Pending") {
+        interval = setInterval(async () => {
+          const res = await fetch(
+            `https://staging-api-720a.utxo.global/ckb/${
+              isTestnet ? "testnet" : "mainnet"
+            }/v1/transactions/${txHash}`
+          );
+
+          const { data } = await res.json();
+          if (data.attributes?.tx_status !== "pending") {
+            setTxStatus(data.attributes?.tx_status);
+          }
+        }, 1500); //1.5s
+      }
+    } catch (e) {
+      console.error(e);
     }
 
-    return createTransactionFromSkeleton(txSkeleton);
-  };
+    return () => clearInterval(interval);
+  }, [txHash, txStatus]);
 
   return (
     <div className="flex flex-col gap-10">
@@ -178,13 +92,20 @@ export default function TransferToken() {
         value={addressTo}
         onChange={(e) => setAddressTo(e.target.value)}
       />
-      <input
-        type="text"
-        placeholder="Args"
-        className="border-b-[1px] outline-none"
-        value={addressTo}
-        onChange={(e) => setArgs(e.target.value)}
-      />
+      <div>
+        <input
+          type="text"
+          placeholder="Args"
+          className="border-b-[1px] outline-none w-full"
+          value={args}
+          onChange={(e) => setArgs(e.target.value)}
+        />
+        {!!args && (
+          <div className="mt-1 text-xs text-gray-500">
+            Balance: {balance[args]?.balance}
+          </div>
+        )}
+      </div>
       <div className="flex gap-5 justify-between border-b-[1px]">
         <input
           type="text"
@@ -200,7 +121,7 @@ export default function TransferToken() {
       <button
         className="bg-[#198754] text-[#FFF] py-3 px-5 rounded-lg text-xl disabled:grayscale"
         disabled={true}
-        onClick={() => {}}
+        onClick={onTransfer}
       >
         Transfer
       </button>

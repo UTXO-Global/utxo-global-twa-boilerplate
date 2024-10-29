@@ -62,13 +62,16 @@ export const LayoutContent = ({
     );
   };
 
+  console.log(balance);
+
   return (
     <>
       {isConnected && wallet ? (
         <div className="flex flex-col h-dvh">
           <Account />
           <div className="text-center py-4">
-            Balance: {balance.toNumber() / 10 ** 8}
+            Balance: {balance["ckb"]?.balance} <br />
+            Balance Occupied: {balance["ckb"]?.balance_occupied} <br />
           </div>
           {children}
         </div>

@@ -1,8 +1,6 @@
 "use client";
 
 import { LocalStorage } from "@/utils/storage";
-import { predefined } from "@ckb-lumos/config-manager";
-import { BI, Indexer, helpers } from "@ckb-lumos/lumos";
 import TonConnect, { Wallet } from "@tonconnect/sdk";
 import { THEME, TonConnectUI, UIWallet } from "@tonconnect/ui";
 import {
@@ -38,7 +36,7 @@ interface WalletContextType {
   wallet: Wallet | null;
   address: string;
   isConnected: boolean;
-  balance: BI;
+  balance: { [key: string]: { balance: number; balance_occupied: number } };
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -48,7 +46,7 @@ const WalletContext = createContext<WalletContextType>({
   wallet: null,
   address: "",
   isConnected: false,
-  balance: BI.from(0),
+  balance: {},
 });
 
 export type AppContextProviderProps = {};
@@ -80,7 +78,7 @@ export function WalletProvider({
     tonConnectUI?.wallet || null
   );
 
-  const [balance, setBalance] = useState(BI.from(0));
+  const [balance, setBalance] = useState({});
 
   const isTestnet = useMemo(() => {
     return wallet?.account.chain.toString() === "nervos_testnet";
@@ -92,24 +90,44 @@ export function WalletProvider({
   }, [wallet]);
 
   const fetchBalance = async () => {
-    setBalance(BI.from(0));
+    setBalance({});
     if (!!address) {
-      const lumosConfig = isTestnet ? predefined.AGGRON4 : predefined.LINA;
-      const rpc = isTestnet
-        ? "https://testnet.ckb.dev/rpc"
-        : "https://mainnet.ckb.dev/rpc";
+      const apiURL = `https://${
+        isTestnet ? "testnet" : "mainnet"
+      }-api.explorer.nervos.org/api/v1/addresses/${address}`;
 
-      const indexer = new Indexer(rpc);
-      const addressScript = helpers.parseAddress(address, {
-        config: lumosConfig,
+      const options = {
+        method: "GET",
+        headers: {
+          Accept: "application/vnd.api+json",
+          "Content-Type": "application/vnd.api+json",
+        },
+      };
+
+      const res = await fetch(apiURL, options);
+      const { data } = await res.json();
+      const attributes = data[0].attributes;
+      const udt_accounts = attributes.udt_accounts as {
+        amount: string;
+        decimal: string;
+        sysbol: string;
+        type_hash: string;
+      }[];
+      const bal: any = {
+        ckb: {
+          balance: Number(attributes.balance) / Number(10 ** 8),
+          balance_occupied:
+            Number(attributes.balance_occupied) / Number(10 ** 8),
+        },
+      };
+
+      udt_accounts.map((udt) => {
+        bal[udt.type_hash] = {
+          balance: Number(udt.amount) / Number(10 ** Number(udt.decimal)),
+        };
       });
-      const collector = indexer.collector({ lock: addressScript });
-      let balance: BI = BI.from(0);
-      for await (const cell of collector.collect()) {
-        balance = balance.add(cell.cellOutput.capacity);
-      }
 
-      setBalance(balance);
+      setBalance(bal);
     }
   };
 
