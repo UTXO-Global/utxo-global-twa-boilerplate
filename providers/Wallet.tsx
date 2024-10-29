@@ -92,9 +92,12 @@ export function WalletProvider({
   const fetchBalance = async () => {
     setBalance({});
     if (!!address) {
-      const apiURL = `https://${
+      // Testnet: https://testnet-api.explorer.nervos.org/api/v1/addresses/{address}
+      // Mainnet: https://mainnet-api.explorer.nervos.org/api/v1/addresses/{address}
+
+      const apiURL = `https://staging-api-720a.utxo.global/ckb/${
         isTestnet ? "testnet" : "mainnet"
-      }-api.explorer.nervos.org/api/v1/addresses/${address}`;
+      }/v1/addresses/${address}`;
 
       const options = {
         method: "GET",
