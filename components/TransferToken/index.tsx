@@ -144,7 +144,7 @@ export default function TransferToken() {
         </Link>
         <button
           className="bg-[#198754] text-[#FFF] py-3 px-5 rounded-lg text-xl disabled:grayscale w-1/2"
-          disabled={!addressTo || !address || Number(amount) < 63}
+          disabled={!addressTo || !address || Number(amount) <= 0}
           onClick={onTransfer}
         >
           Transfer
