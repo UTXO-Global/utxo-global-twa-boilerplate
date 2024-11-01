@@ -422,10 +422,10 @@
     "@tonconnect/isomorphic-fetch" "^0.0.3"
     "@tonconnect/protocol" "^2.2.6"
 
-"@utxo-global/tonconnect-ui@^2.0.10":
-  version "2.0.10"
-  resolved "https://registry.yarnpkg.com/@utxo-global/tonconnect-ui/-/tonconnect-ui-2.0.10.tgz#938515427a896970500a60c6aea8ef1dea6fff5d"
-  integrity sha512-cpve1zVW60/o1rcPLNiREUL980CqoUnUhhtZSTvSWZWvVUfnhYP/dj3hYnFrGMREldV9F+tbXKALcI93xjCa/A==
+"@utxo-global/tonconnect-ui@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@utxo-global/tonconnect-ui/-/tonconnect-ui-2.1.0.tgz#2b726abeb4e4c2d597ef2969363c25fc0abacb0e"
+  integrity sha512-APD2f++k95gH1AO8cAcJLVdzA0++LpVTN1RHMNEgB3MQGgX6X4Q/NGowQSamWd3tT70ZfQhhdrnhV7QcXjjC9Q==
   dependencies:
     "@utxo-global/tonconnect-sdk" "3.1.0"
     classnames "^2.3.2"
