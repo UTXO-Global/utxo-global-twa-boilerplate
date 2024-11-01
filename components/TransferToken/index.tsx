@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { useEffect, useState } from "react";
 import { truncateAddress } from "../../utils";
 import { useWalletContext } from "@/providers/Wallet";
-import { UserRejectsError } from "@tonconnect/sdk";
+import { UserRejectsError } from "@utxo-global/tonconnect-sdk";
 import Link from "next/link";
 
 export default function TransferToken() {

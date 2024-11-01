@@ -1,8 +1,8 @@
 "use client";
 
 import { LocalStorage } from "@/utils/storage";
-import TonConnect, { Wallet } from "@tonconnect/sdk";
-import { THEME, TonConnectUI, UIWallet } from "@tonconnect/ui";
+import TonConnect, { Wallet } from "@utxo-global/tonconnect-sdk";
+import { THEME, TonConnectUI, UIWallet } from "@utxo-global/tonconnect-ui";
 import {
   PropsWithChildren,
   createContext,

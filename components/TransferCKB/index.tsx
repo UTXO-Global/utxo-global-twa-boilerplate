@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { truncateAddress } from "../../utils";
 import { useWalletContext } from "@/providers/Wallet";
 import Link from "next/link";
-import { UserRejectsError } from "@tonconnect/sdk";
+import { UserRejectsError } from "@utxo-global/tonconnect-sdk";
 
 export default function TransferCKB() {
   const { isConnected, wallet, address, tonConnectUI } = useWalletContext();

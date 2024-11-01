@@ -9,8 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@tonconnect/sdk": "^3.0.5",
-    "@tonconnect/ui": "^2.0.9",
+    "@ckb-ccc/core": "^0.1.0-alpha.5",
     "@twa-dev/sdk": "^7.10.1",
     "next": "14.2.4",
     "react": "^18",
