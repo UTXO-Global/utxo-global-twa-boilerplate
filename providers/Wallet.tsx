@@ -18,12 +18,18 @@ const tonConnect = new TonConnect({
   storage: LocalStorage,
 });
 
+const WalletURL = {
+  dev: "https://t.me/hson_local_dev_bot/wallet",
+  staging: "https://t.me/utxo_stag_bot/wallet",
+  prod: "https://t.me/utxo_global_wallet_bot/utxo",
+};
+
 const customWallet: UIWallet = {
   appName: "utxowallet",
   name: "UTXO Wallet",
   imageUrl: "https://utxo.global/icon.png",
-  aboutUrl: "https://t.me/utxo_global_wallet_bot/utxo",
-  universalLink: "https://t.me/utxo_global_wallet_bot/utxo",
+  aboutUrl: WalletURL.prod,
+  universalLink: WalletURL.prod,
   jsBridgeKey: "utxowallet",
   bridgeUrl: "https://bridge.ton.space/bridge",
   platforms: ["ios", "android", "macos", "windows", "linux"],

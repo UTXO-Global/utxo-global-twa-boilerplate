@@ -13,6 +13,7 @@ export default function TransferCKB() {
   const [error, setError] = useState<any | undefined>(undefined);
   const [addressTo, setAddressTo] = useState("");
   const [amount, setAmount] = useState("");
+  const [outputData, setOutputData] = useState("");
   const [txStatus, setTxStatus] = useState("");
   const isTestnet = useMemo(() => {
     return wallet?.account.chain.toString() === "nervos_testnet";
@@ -22,12 +23,19 @@ export default function TransferCKB() {
     try {
       setTxHash("");
       setError(undefined);
+      const data = !!outputData
+        ? `0x${Buffer.from(outputData, "utf-8").toString("hex")}`
+        : "";
+
       const result = await tonConnectUI?.sendTransaction({
         validUntil: Math.floor(Date.now() / 1000) + 60,
         messages: [
           {
             address: addressTo,
             amount: amount,
+            payload: !!outputData
+              ? btoa(JSON.stringify({ outputData: data }))
+              : undefined,
           },
         ],
       });
@@ -98,6 +106,18 @@ export default function TransferCKB() {
           }}
         />
         <span>CKB</span>
+      </div>
+
+      <div className="flex gap-5 justify-between border-b-[1px]">
+        <input
+          type="text"
+          placeholder="output data..."
+          className="w-full outline-none"
+          value={outputData}
+          onChange={(e) => {
+            setOutputData(e.target.value);
+          }}
+        />
       </div>
 
       {!!txHash && (
